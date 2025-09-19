@@ -1,4 +1,27 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080'
+const DEFAULT_LOCAL = 'http://localhost:8080'
+let API_BASE = process.env.NEXT_PUBLIC_API_BASE || DEFAULT_LOCAL
+
+// In browser, log which API base was inlined at build time so deployed apps don't accidentally use localhost
+if (typeof window !== 'undefined') {
+  console.info('API base (build-time):', API_BASE)
+
+  // If NEXT_PUBLIC_API_BASE fell back to localhost during build but we're running on a production origin,
+  // attempt to auto-resolve to the obvious deployed backend host. This is a best-effort convenience only.
+  try {
+    const origin = window.location.origin
+    // If the build-time base was localhost, but we are running on the production frontend domain,
+    // prefer the Render backend URL that you provided.
+    if (API_BASE === DEFAULT_LOCAL && origin === 'https://secure-stack-frontend.vercel.app') {
+      API_BASE = 'https://secure-stack-backend.onrender.com'
+      console.info('API base overridden at runtime for production frontend:', API_BASE)
+    }
+  } catch (e) {
+    // ignore
+  }
+}
+
+// Always expose the final API base used at runtime for easier debugging
+if (typeof window !== 'undefined') console.info('API base (final):', API_BASE)
 
 export interface ApiResponse<T = any> {
   data: T
